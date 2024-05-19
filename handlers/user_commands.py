@@ -2,7 +2,7 @@ from aiogram import Router, F, Bot, types
 from aiogram.types import Message
 from aiogram.filters import CommandStart
 
-from keyboards import reply, inline, fabrics
+from keyboards import reply, inline
 
 
 router = Router()
