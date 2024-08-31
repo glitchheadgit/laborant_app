@@ -1,0 +1,9 @@
+aiogram==3.6.0
+openai==0.28
+pandas
+numpy
+torch
+PyMuPDF
+python-docx
+asyncio
+pydantic-settings
