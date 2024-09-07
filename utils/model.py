@@ -9,7 +9,7 @@ openai.api_key = config.gpt_token.get_secret_value()
 
 def retrieve_table_from_text(user_input: str) -> str:
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": config.system_content_table.get_secret_value()},
             {"role": "user", "content": user_input},
@@ -17,11 +17,14 @@ def retrieve_table_from_text(user_input: str) -> str:
         temperature=0.1,
         max_tokens=3000
     )
-    table = response.choices[0].message['content'].strip()
-    df = pd.read_csv(StringIO(table))	    
-    df['Value'] = df['Value'].astype(float)
+    table = response.choices[0].message['content'].strip().replace("'", "")
+    print(table)
+    df = pd.read_csv(StringIO(table))	
+    print(df)    
+    df["Value"] = df['Value'].astype(float)
     df['Deviation'] = df.apply(check_deviation, axis=1)
-    table_text_deviation = filter_deviations(df)
+    print(df)
+    table_text_deviations = filter_deviations(df)
     return df.to_csv(index=False), table_text_deviations
 
 

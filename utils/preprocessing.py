@@ -1,3 +1,4 @@
+import pandas as pd
 import pymupdf
 import docx
 import hashlib
@@ -41,17 +42,17 @@ def read_docx(file: BytesIO) -> str:
 
 
 def save_data(chatid: int, age: str, sex: str, table: str, analysis: str) -> None:
-    dirs = ['tables', 'analyses']
+    dirs = [os.path.join('data', 'tables'), os.path.join('data', 'analyses')]
     file = hashlib.sha256(str(chatid).encode()).hexdigest() + '_1'
     counter = 2
     for dir in dirs:
         if not os.path.exists(dir):
             os.mkdir(dir)
         while os.path.exists(os.path.join(dir, file)):
-            file = file[:-1] + counter
+            file = file[:-1] + str(counter)
             counter += 1
         with open(os.path.join(dir, file), 'w') as f:
-            if dir == 'tables':
+            if dir.endswith('tables'):
                 f.write('# Age: ' + age + '\n')
                 f.write('# Sex: ' + sex + '\n')
                 f.write(table)
