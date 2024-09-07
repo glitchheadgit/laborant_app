@@ -7,3 +7,9 @@ PyMuPDF
 python-docx
 asyncio
 pydantic-settings
+pytesseract
+pdf2image
+pillow
+camelot-py[cv]
+PyPDF2==1.26.0
+pyheif

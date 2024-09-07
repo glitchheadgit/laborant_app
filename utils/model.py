@@ -17,10 +17,34 @@ def retrieve_table_from_text(user_input: str) -> str:
         temperature=0.1,
         max_tokens=3000
     )
-    table = response.choices[0].message['content'].strip().replace("'", "")
-    print(table)
-    df = pd.read_csv(StringIO(table))	
-    print(df)    
+    table = response.choices[0].message['content'].strip()
+    # Заменяем запятые в столбце Analysis на пробелы
+    table_lines = table.strip().split("\n")
+    cleaned_lines = []
+
+    # Обрабатываем каждую строку
+    for line in table_lines:
+        parts = line.split("','")
+        
+        # Если это не заголовок, обрабатываем столбец Analysis
+        if parts[0].startswith("'") and parts[0].endswith("'"):
+            analysis_value = parts[0].strip("'")
+            analysis_value = analysis_value.replace(",", " ")
+            parts[0] = f"'{analysis_value}'"
+        
+        # Собираем строку обратно
+        cleaned_line = "','".join(parts)
+        cleaned_lines.append(cleaned_line)
+
+    # Собираем очищенную таблицу обратно в текст
+    cleaned_table = "\n".join(cleaned_lines)
+
+    print("Очищенная таблица (после удаления запятых в Analysis):")
+    print(cleaned_table)
+    
+    # Преобразуем очищенный текст в DataFrame
+    df = pd.read_csv(StringIO(cleaned_table), quotechar="'", sep=',')
+    print(df)   
     df["Value"] = df['Value'].astype(float)
     df['Deviation'] = df.apply(check_deviation, axis=1)
     print(df)
@@ -60,7 +84,7 @@ def filter_deviations(df) -> str:
     return df[df['Deviation'].isin(['Понижен', 'Повышен'])].to_string(index=False)
 
 
-def analyze_table_with_gpt(prompt, temperature=0.15, max_tokens=3000):
+def analyze_table_with_gpt(prompt, temperature=0.1, max_tokens=3000):
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
