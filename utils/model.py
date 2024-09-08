@@ -18,7 +18,7 @@ def retrieve_table_from_text(user_input: str) -> str:
         max_tokens=3000
     )
     table = response.choices[0].message['content'].strip()
-    # Заменяем запятые в столбце Analysis на пробелы
+    
     table_lines = table.strip().split("\n")
     cleaned_lines = []
 
@@ -42,14 +42,20 @@ def retrieve_table_from_text(user_input: str) -> str:
     print("Очищенная таблица (после удаления запятых в Analysis):")
     print(cleaned_table)
     
-    # Преобразуем очищенный текст в DataFrame
-    df = pd.read_csv(StringIO(cleaned_table), quotechar="'", sep=',')
-    print(df)   
-    df["Value"] = df['Value'].astype(float)
-    df['Deviation'] = df.apply(check_deviation, axis=1)
-    print(df)
-    table_text_deviations = filter_deviations(df)
-    return df.to_csv(index=False), table_text_deviations
+    table_text_deviation = "Не получилось обработать таблицу из-за наличия букв/слов в значениях стобцов 'Value' и 'Reference Value'. Поэтому сам из таблицы указанной в input data составь таблицу Blood values that are abnormal, оставив строки только с теми показателями крови, значения которых отличаются от референсных."
+
+    try:
+        # Преобразуем очищенный текст в DataFrame
+        df = pd.read_csv(StringIO(cleaned_table), quotechar="'", sep=',')
+        print(df)   
+        df["Value"] = df['Value'].astype(float)
+        df['Deviation'] = df.apply(check_deviation, axis=1)
+        print(df)
+        table_text_deviation = filter_deviations(df)
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+    
+    return df.to_csv(index=False), table_text_deviation
 
 
 def check_deviation(row) -> str:
