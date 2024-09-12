@@ -1,0 +1,31 @@
+# Age: 24
+# Sex: женский
+Analysis,Value,Reference Value,Unit of Measure,Deviation
+Leukociti,5.34,3.5-10.5,*10^9/L,В норме
+Eritrociti,4.68,3.85-5.25,*10^12/L,В норме
+Hemoglobin,128.2,120.0-155.0,г/L,В норме
+Hematokрит,38.5,35.0-47.0,%,В норме
+MCV,82.3,80.0-100.0,fL,В норме
+MCH,27.4,27.0-34.0,pg,В норме
+MCHC,333.0,320-360,г/L,В норме
+Trombociti,333.5,150-450,*10^9/L,В норме
+Limfociti,51.88,20.0-45.0,%,Повышен
+Monociti,6.01,1.7-11.0,%,В норме
+Granulociti,39.35,44.0-72.0,%,Понижен
+Bazofili,1.07,0.0-2.0,%,В норме
+Eozinofili,1.69,0.0-7.0,%,В норме
+Sedimentacija eritrocita,4.0,до 20,мм/ч,Неопределено
+Urea,3.2,2.76-8.07,mmol/L,В норме
+Кreatinin,83.0,44-80,µmol/L,Повышен
+Holesterol,5.38,< 5.2,mmol/L,Повышен
+HDL holesterol,1.81,1.166-1.554,mmol/L,Повышен
+LDL holesterol,3.0,< 3.4,mmol/L,В норме
+Trigliceridi,1.19,0.396-1.526,mmol/L,В норме
+Bilirubin ukupan,5.1,< 21.0,µmol/L,В норме
+AST,13.5,< 32,U/L,В норме
+ALT,13.2,< 33,U/L,В норме
+Gama GT,23.0,< 40,U/L,В норме
+Gvožđe,13.48,5.83-34.5,µmol/L,В норме
+Glukoza,4.47,4.11-5.89,mmol/L,В норме
+T3,2.6,1.30-3.10,nmol/L,В норме
+TSH,3.14,0.27-4.20,µIU/ml,В норме

@@ -10,7 +10,7 @@ from aiogram.fsm.context import FSMContext
 from config_reader import config
 from utils.states import Form
 from utils.model import retrieve_table_from_text, analyze_table_with_gpt
-from utils.preprocessing import save_data
+from utils.preprocessing import read_pdf, save_data
 from utils.preprocessing_1 import read_document
 from keyboards import reply
 
@@ -33,7 +33,7 @@ async def process_pdf(message: Message, state: FSMContext):
     #try:
     # Загрузка и чтение PDF
     file = await message.bot.download(file_id)
-    text = read_document(file)
+    text = read_pdf(file)
     
     # Извлечение данных из состояния пользователя
     user_data = await state.get_data()

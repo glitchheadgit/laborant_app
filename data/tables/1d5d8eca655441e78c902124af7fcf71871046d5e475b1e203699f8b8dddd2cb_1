@@ -1,0 +1,23 @@
+# Age: 33
+# Sex: женский
+Analysis,Value,Reference Value,Unit of Measure,Deviation
+KKS - Leukociti,9.2,3.4 - 9.7,*10^9/L,В норме
+KKS - Eritrociti,4.85,3.86 - 5.08,*10^12/L,В норме
+KKS - Hemoglobin,134.0,119 - 157,г/L,В норме
+KKS - Hematokrit,0.404,0.360 - 0.470,L/L,В норме
+KKS - MCV,83.3,83.0 - 97.2,fl,В норме
+KKS - MCH,27.6,27.4 - 33.9,pg,В норме
+KKS - MCHC,331.0,320 - 360,г/L,В норме
+KKS - RDW,13.1,11.6 - 14.5,%,В норме
+KKS - Trombociti,334.0,158 - 424,*10^9/L,В норме
+KKS - MPV,9.3,6.8 - 10.4,fl,В норме
+Le formula neutrofili,53.4,44.0 - 72.0,%,В норме
+Le formula limfociti,36.3,20.0 - 46.0,%,В норме
+Le formula monociti,6.9,2.0 - 12.0,%,В норме
+Le formula eozinofili,2.9,0.0 - 7.0,%,В норме
+Le formula bazofili,0.5,0.0 - 2.5,%,В норме
+Le formula neutrofili abs,4.9,2.1 - 6.5,*10^9/L,В норме
+Le formula limfociti abs,3.4,1.2 - 3.4,*10^9/L,В норме
+Le formula monociti abs,0.6,0.1 - 0.8,*10^9/L,В норме
+Le formula eozinofili abs,0.3,0.0 - 0.4,*10^9/L,В норме
+Le formula bazofili abs,0.1,0.0 - 0.1,*10^9/L,В норме
