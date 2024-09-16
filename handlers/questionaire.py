@@ -17,13 +17,6 @@ from keyboards import reply
 
 router = Router()
 
-
-@router.message(F.text.in_(["/analysis", "Расшифровать анализ"]))
-async def get_photo(message: Message, state: FSMContext):
-    await state.set_state(Form.user_analyses)
-    await message.answer("Пожалуйста, загрузите <b>PDF</b> документ с результатами анализов", reply_markup=reply.cancel)
-
-
 @router.message(Form.user_analyses, F.document.file_name.endswith('.pdf'))
 async def process_pdf(message: Message, state: FSMContext):
     await message.answer(
@@ -68,7 +61,6 @@ async def process_pdf(message: Message, state: FSMContext):
     # Вывод результата анализа
     await message.reply(
         f"{result}",
-        reply_markup=reply.main,
         parse_mode="HTML"
     )
    #  except Exception as e:
@@ -96,27 +88,19 @@ async def process_docx(message: Message, state: FSMContext):
         result =  analyses.replace('&', '&amp').replace('<', '&lt;').replace('>', '&gt;')
         await message.reply(
             '<pre><code>' + analyses + '</code></pre>',
-            reply_markup=reply.main,
         )
         await message.reply(
             result,
-            reply_markup=reply.main,
         )
     except Exception as e:
         await message.reply(
             '<pre><code>' + str(e).replace('&', '&amp').replace('<', '&lt;').replace('>', '&gt;') + '</code></pre>',
-            reply_markup=reply.main
         )
-
-@router.message(F.text == "Отменить запрос")
-async def process_start_command(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer("Готов к работе!", reply_markup=reply.main)
 
 @router.message(Form.user_analyses, ~F.document.file_name.regexp(r'.*.pdf|.*.docx?'))
 async def wrong_format_handler(message: Message, state: FSMContext):
     if message.text == "Отменить запрос":
         await state.clear()
-        await message.answer("Чего желаете?", reply_markup=reply.main)
+        await message.answer("Готов к работе!")
     else:
         await message.answer("Отправьте <b>документ</b> в формате <b>pdf</b>!")

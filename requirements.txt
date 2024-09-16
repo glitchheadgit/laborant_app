@@ -13,3 +13,4 @@ pillow
 camelot-py[cv]
 PyPDF2==1.26.0
 pyheif
+tiktoken

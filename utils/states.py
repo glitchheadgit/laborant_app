@@ -4,3 +4,4 @@ class Form(StatesGroup):
     age = State()
     sex = State()
     user_analyses = State()
+    ok = State()

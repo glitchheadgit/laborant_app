@@ -16,12 +16,6 @@ from keyboards import reply
 
 router = Router()
 
-# Шаг 1: Ожидание загрузки PDF
-@router.message(F.text.in_(["/analysis", "Расшифровать анализ"]))
-async def get_photo(message: Message, state: FSMContext):
-    await state.set_state(Form.user_analyses)
-    await message.answer("Пожалуйста, загрузите <b>PDF</b> документ с результатами анализов", reply_markup=reply.cancel)
-
 # Шаг 2: Обработка PDF
 @router.message(Form.user_analyses, F.document.file_name.endswith('.pdf'))
 async def process_pdf(message: Message, state: FSMContext):

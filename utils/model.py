@@ -1,4 +1,5 @@
 import openai
+import tiktoken
 import pandas as pd
 
 from io import StringIO
@@ -99,6 +100,33 @@ def analyze_table_with_gpt(prompt, temperature=0.1, max_tokens=3000):
         ],
         temperature=temperature,
         max_tokens=max_tokens,
+        n=1,
+        stop=None
+    )
+
+    return response.choices[0].message['content'].strip()
+
+def count_tokens(text: str) -> int:
+    #  Для экономии считаем кол-во токенов в запросе и умножаем на 2 потом.
+    encoding = tiktoken.encoding_for_model("gpt-4o-mini")
+    tokens = encoding.encode(text)
+    return len(tokens)
+
+def getting_bioethic_response(prompt, temperature=0.1):
+    # Подсчет количества токенов в prompt
+    token_count = count_tokens(prompt)
+    
+    # Установка значения max_tokens (умножаем на 2)
+    max_tokens = token_count * 2
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": config.system_content_bioethic.get_secret_value()},
+            {"role": "user", "content": analyses},
+        ],
+        temperature=temperature,
+        max_tokens=max_tokens,  # Используем динамически рассчитанное значение
         n=1,
         stop=None
     )

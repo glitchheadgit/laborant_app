@@ -28,15 +28,3 @@ start_button = InlineKeyboardMarkup(
         ],
     ]
 )
-
-# Основное меню (пример)
-main_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="Начать новый анализ",
-                callback_data="start_analysis"
-            )
-        ]
-    ]
-)
