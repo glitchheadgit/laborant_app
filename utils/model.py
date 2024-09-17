@@ -112,9 +112,9 @@ def count_tokens(text: str) -> int:
     tokens = encoding.encode(text)
     return len(tokens)
 
-def getting_bioethic_response(prompt, temperature=0.1):
+def getting_bioethic_response(analyses, temperature=0.1):
     # Подсчет количества токенов в prompt
-    token_count = count_tokens(prompt)
+    token_count = count_tokens(analyses)
     
     # Установка значения max_tokens (умножаем на 2)
     max_tokens = token_count * 2
