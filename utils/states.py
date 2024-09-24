@@ -5,3 +5,5 @@ class Form(StatesGroup):
     sex = State()
     user_analyses = State()
     ok = State()
+    diseases_yesno = State()
+    diseases = State()

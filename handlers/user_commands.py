@@ -70,9 +70,35 @@ async def sex_answer_bad(message: Message, state: FSMContext):
 @router.callback_query(Form.sex)
 async def sex_answer_good(callback_query: CallbackQuery, state: FSMContext, bot: Bot):
     await state.update_data(sex=callback_query.data)
+    await bot.send_message(chat_id=callback_query.from_user.id, text="Есть ли у Вас какие-либо <b>хронические</b> или <b>наследственные заболевания</b>?", reply_markup=inline.diseases, parse_mode="HTML")
+    await state.set_state(Form.diseases_yesno)
+
+
+@router.message(Form.diseases_yesno)
+async def sex_answer_bad(message: Message, state: FSMContext):
+    await message.answer('Для выбора, пожалуйста, воспользуйтесь кнопками.')
+
+
+@router.callback_query(Form.diseases_yesno)
+async def sex_answer_good(callback_query: CallbackQuery, state: FSMContext, bot: Bot):
+    if callback_query.data == 'нету':
+        await state.update_data(diseases_yesno=callback_query.data)
+        user_data = await state.get_data()
+        await callback_query.answer(f'Готов к работе! Вы указали,\nВозраст: {user_data["age"]}\nПол: {user_data["sex"]}\nНаличие заболеваний: {user_data['diseases_yesno']}')
+        await bot.send_message(chat_id=callback_query.from_user.id, text="Отправьте, пожалуйста, pdf с анализами.")
+        await state.set_state(Form.user_analyses)
+    else:
+        await bot.send_message(chat_id=callback_query.from_user.id, text="Пожалуйста, напишите, какие у Вас есть <b>хронические</b> либо <b>наследственные заболевания</b>.", parse_mode="HTML")
+        await state.set_state(Form.diseases)
+        
+
+@router.message(Form.diseases)
+async def sex_answer_bad(message: Message, state: FSMContext, bot: Bot):
+    await state.update_data(diseases=message.text)
     user_data = await state.get_data()
-    await callback_query.answer(f'Готов к работе! Вы указали,\nВозраст: {user_data["age"]}\nПол: {user_data["sex"]}')
-    await bot.send_message(chat_id=callback_query.from_user.id, text="Отправьте, пожалуйста, pdf с анализами.")
+    await message.answer(f'Готов к работе! Вы указали,\nВозраст: {user_data["age"]}\nПол: {user_data["sex"]}\nНаличие заболеваний: {user_data['diseases']}')
+    await bot.send_message(chat_id=message.from_user.id, text="Отправьте, пожалуйста, pdf с анализами.")
     await state.set_state(Form.user_analyses)
 
-
+    # await bot.send_message(chat_id=callback_query.from_user.id, text="Отправьте, пожалуйста, pdf с анализами.")
+    # await state.set_state(Form.user_analyses)

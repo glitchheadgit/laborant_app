@@ -28,3 +28,20 @@ start_button = InlineKeyboardMarkup(
         ],
     ]
 )
+
+diseases = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="Есть",
+                callback_data="есть"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="Нету",
+                callback_data="нету"
+            )
+        ],
+    ]
+)

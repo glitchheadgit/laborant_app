@@ -1,4 +1,5 @@
 import io
+import re
 import pandas as pd
 
 from io import StringIO
@@ -9,7 +10,7 @@ from aiogram.fsm.context import FSMContext
 
 from config_reader import config
 from utils.states import Form
-from utils.model import retrieve_table_from_text, analyze_table_with_gpt
+from utils.model import retrieve_table_from_text, analyze_table_with_gpt, getting_bioethic_response
 from utils.preprocessing import read_pdf, save_data
 from utils.preprocessing_1 import read_document
 from keyboards import reply
@@ -31,13 +32,12 @@ async def process_pdf(message: Message, state: FSMContext):
     # Извлечение данных из состояния пользователя
     user_data = await state.get_data()
     table_text, table_text_deviation = retrieve_table_from_text(text)
-    print(table_text, table_text_deviation, sep='\n\n')
     
     # Формирование запроса для GPT-4
-    formatter = {'age': user_data['age'], 'sex': user_data['sex'], 'table_text': table_text, 'table_text_deviation': table_text_deviation}
+    formatter = {'age': user_data['age'], 'sex': user_data['sex'], 'table_text': table_text, 'table_text_deviation': table_text_deviation, 'diseases': user_data['diseases']}
     prompt = config.prompt.get_secret_value().format(**formatter)
     analyses = analyze_table_with_gpt(prompt)
-    
+    bioethic_response = getting_bioethic_response(analyses)
     # Сохранение данных
     save_data(message.chat.id, user_data['age'], user_data['sex'], table_text, analyses)
 
@@ -56,11 +56,20 @@ async def process_pdf(message: Message, state: FSMContext):
         pass # await message.reply(f"Ошибка при создании DataFrame: {str(e)}", reply_markup=reply.main)
 
     # Форматирование анализа и отклонений для вывода
-    result = analyses.replace('&', '&amp').replace('<', '&lt;').replace('>', '&gt;')
+    result = re.sub(r'<([^>]*)\n', r'&lt;\1', bioethic_response.replace('&', '&amp'))
+    result = re.sub(r'\n([^<]*)>', r'\1&gt;', result)
 
+    # Разделяем текст на предсказания и рекоммендации
+    anal, rec = result.split('На основе результатов ваших анализов мы рекомендуем следующие дополнительные исследования')
+    rec = 'На основе результатов ваших анализов мы рекомендуем следующие дополнительные исследования' + rec
+
+    await message.reply(
+        f"{anal}",
+        parse_mode="HTML"
+    )
     # Вывод результата анализа
     await message.reply(
-        f"{result}",
+        f"{rec}",
         parse_mode="HTML"
     )
    #  except Exception as e:
@@ -81,16 +90,27 @@ async def process_docx(message: Message, state: FSMContext):
         file = await message.bot.download(file_id)
         text = read_docx(file)
         table_text, table_text_deviation = retrieve_table_from_text(text)
-        formatter = {'age': user_data['age'], 'sex': user_data['sex'], 'table_text': table_text, 'table_text_deviation': table_text_deviation}
+        formatter = {'age': user_data['age'], 'sex': user_data['sex'], 'table_text': table_text, 'table_text_deviation': table_text_deviation, 'diseases': user_data['diseases']}
         prompt = config.prompt.get_secret_value().format(**formatter)
         analyses = analyze_table_with_gpt(prompt)
+        #тут добавил переменную и после нее в резалт теперь биоэтик респонс
+        bioethic_response = getting_bioethic_response(analyses)
         save_data(message.chat.id, user_data['age'], user_data['sex'], table_text, analyses)
-        result =  analyses.replace('&', '&amp').replace('<', '&lt;').replace('>', '&gt;')
+        result = re.sub(r'<([^>]*)\n', r'&lt;\1', bioethic_response.replace('&', '&amp'))
+        result = re.sub(r'\n([^<]*)>', r'\1&gt;', result)
+
+        # Разделяем текст на предсказания и рекоммендации
+        anal, rec = result.split('На основе результатов ваших анализов мы рекомендуем следующие дополнительные исследования')
+        rec = 'На основе результатов ваших анализов мы рекомендуем следующие дополнительные исследования' + rec
+
         await message.reply(
-            '<pre><code>' + analyses + '</code></pre>',
+            f"{anal}",
+            parse_mode="HTML"
         )
+        # Вывод результата анализа
         await message.reply(
-            result,
+            f"{rec}",
+            parse_mode="HTML"
         )
     except Exception as e:
         await message.reply(
