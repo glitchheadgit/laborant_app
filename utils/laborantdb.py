@@ -35,7 +35,7 @@ def db_create_user(db, user_id):
 
 
 def db_add_user_profile(db, user_id, name, sex, age, healthy, diseases=None):
-    existing_profiles = db.users.find_one({'user_id': user_id}, {'profiles': 1})
+    existing_profiles = db.users.find_one({'user_id': user_id}, {'profiles': 1})['profiles']
     if existing_profiles and len(existing_profiles) < 5:
         profile = {
             'name': name,
