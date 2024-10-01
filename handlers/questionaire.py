@@ -1,45 +1,61 @@
 import io
 import re
+import bson
 import pandas as pd
 
 from io import StringIO
 
-from aiogram import Router, F
 from aiogram.types import Message, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.fsm.context import FSMContext
+from aiogram import Router, F
 
+from utils.model import retrieve_table_from_text, analyze_table_with_gpt, getting_bioethic_response, diseases_check
+from utils.preprocessing import read_pdf, save_data
+from utils.laborantdb import db_find_user_profile, db_create_file
+from utils.preprocessing_1 import read_document
 from config_reader import config
 from utils.states import Form
-from utils.model import retrieve_table_from_text, analyze_table_with_gpt, getting_bioethic_response
-from utils.preprocessing import read_pdf, save_data
-from utils.preprocessing_1 import read_document
 from keyboards import reply
+from keyboards.inline import create_file_rating
 
 
 router = Router()
 
 @router.message(Form.user_analyses, F.document.file_name.endswith('.pdf'))
 async def process_pdf(message: Message, state: FSMContext):
+    from bot import db
     await message.answer(
         '📝 Мы получили Ваши анализы и приступили к обработке.\n\n⏳ Это займет не более 3 минут.',
     )
     file_id = message.document.file_id
+    query = await db.files.count_documents({}) / 3 + 1
     #try:
     # Загрузка и чтение PDF
     file = await message.bot.download(file_id)
+    await db_create_file(db, message.from_user.id, 0, bson.Binary(file.read()), query)
     text = read_pdf(file)
     
     # Извлечение данных из состояния пользователя
     user_data = await state.get_data()
+    profile = await db_find_user_profile(db, message.from_user.id, user_data['name'])
+    if profile['sex']:
+        profile['sex'] = 'Мужчина'
+    else:
+        profile['sex'] = 'Женщина'
+
     table_text, table_text_deviation = retrieve_table_from_text(text)
-    
+    await db_create_file(db, message.from_user.id, 2, table_text, query)
+
     # Формирование запроса для GPT-4
-    formatter = {'age': user_data['age'], 'sex': user_data['sex'], 'table_text': table_text, 'table_text_deviation': table_text_deviation, 'diseases': user_data['diseases']}
+    formatter = {'age': profile['age'], 'sex': profile['sex'], 'table_text': table_text, 'table_text_deviation': table_text_deviation, 'diseases': profile['diseases']}
+    
     prompt = config.prompt.get_secret_value().format(**formatter)
-    analyses = analyze_table_with_gpt(prompt)
-    bioethic_response = getting_bioethic_response(analyses)
+
+    analysis = analyze_table_with_gpt(prompt)
+    bioethic_response = getting_bioethic_response(analysis)
     # Сохранение данных
-    save_data(message.chat.id, user_data['age'], user_data['sex'], table_text, analyses)
+    analysis_id = await db_create_file(db, message.from_user.id, 3, bioethic_response, query)
+    keyboard = create_file_rating(analysis_id)
 
     # Отладка: выводим содержимое исходной таблицы
     # await message.reply(
@@ -49,19 +65,19 @@ async def process_pdf(message: Message, state: FSMContext):
     # )
 
     # Пробуем преобразовать текст в DataFrame
-    try:
-        df = pd.read_csv(StringIO(table_text))
-        # await message.reply(f"Столбцы таблицы: {', '.join(df.columns)}", reply_markup=reply.main)
-    except Exception as e:
-        pass # await message.reply(f"Ошибка при создании DataFrame: {str(e)}", reply_markup=reply.main)
+    # try:
+    #     df = pd.read_csv(StringIO(table_text))
+    #     # await message.reply(f"Столбцы таблицы: {', '.join(df.columns)}", reply_markup=reply.main)
+    # except Exception as e:
+    #     pass # await message.reply(f"Ошибка при создании DataFrame: {str(e)}", reply_markup=reply.main)
 
     # Форматирование анализа и отклонений для вывода
     result = re.sub(r'<([^>]*)\n', r'&lt;\1', bioethic_response.replace('&', '&amp'))
     result = re.sub(r'\n([^<]*)>', r'\1&gt;', result)
 
     # Разделяем текст на предсказания и рекоммендации
-    anal, rec = result.split('На основе результатов ваших анализов мы рекомендуем следующие дополнительные исследования')
-    rec = 'На основе результатов ваших анализов мы рекомендуем следующие дополнительные исследования' + rec
+    anal, rec = result.split('На основе результатов ваших анализов мы рекомендуем следующие <b>дополнительные исследования:</b>')
+    rec = 'На основе результатов ваших анализов мы рекомендуем следующие <b>дополнительные исследования:</b>' + rec
 
     await message.reply(
         f"{anal}",
@@ -70,7 +86,8 @@ async def process_pdf(message: Message, state: FSMContext):
     # Вывод результата анализа
     await message.reply(
         f"{rec}",
-        parse_mode="HTML"
+        parse_mode="HTML",
+        reply_markup=keyboard
     )
    #  except Exception as e:
     #    await message.reply(
@@ -82,26 +99,45 @@ async def process_pdf(message: Message, state: FSMContext):
 
 @router.message(Form.user_analyses, F.document.file_name.regexp('.*docx?'))
 async def process_docx(message: Message, state: FSMContext):
+    from bot import db
     await message.answer(
             'Подождите минуту, Ваши анализы обрабатываются...',
     )
     file_id = message.document.file_id
+    query = await db.files.count_documents({}) / 3 + 1
     try:
         file = await message.bot.download(file_id)
+        await db_create_file(db, message.from_user.id, 1, bson.Binary(file.read()))
         text = read_docx(file)
+        user_data = await state.get_data()
+        profile = await db_find_user_profile(db, message.from_user.id, user_data['name'])
+        if profile['sex']:
+            profile['sex'] = 'Мужчина'
+        else:
+            profile['sex'] = 'Женщина'
+
         table_text, table_text_deviation = retrieve_table_from_text(text)
-        formatter = {'age': user_data['age'], 'sex': user_data['sex'], 'table_text': table_text, 'table_text_deviation': table_text_deviation, 'diseases': user_data['diseases']}
+        await db_create_file(db, message.from_user.id, 2, table_text, query)
+
+        # Формирование запроса для GPT-4
+        formatter = {'age': profile['age'], 'sex': profile['sex'], 'table_text': table_text, 'table_text_deviation': table_text_deviation, 'diseases': profile['diseases']}
+
         prompt = config.prompt.get_secret_value().format(**formatter)
-        analyses = analyze_table_with_gpt(prompt)
+
+        analysis = analyze_table_with_gpt(prompt)
         #тут добавил переменную и после нее в резалт теперь биоэтик респонс
-        bioethic_response = getting_bioethic_response(analyses)
-        save_data(message.chat.id, user_data['age'], user_data['sex'], table_text, analyses)
+        bioethic_response = getting_bioethic_response(analysis)
+
+        analysis_id = await db_create_file(db, message.from_user.id, 3, bioethic_response, query)
+        await db_analysis_inc(db, message.from_user.id)
+        keyboard = create_file_rating(analysis_id)
+
+
         result = re.sub(r'<([^>]*)\n', r'&lt;\1', bioethic_response.replace('&', '&amp'))
         result = re.sub(r'\n([^<]*)>', r'\1&gt;', result)
-
         # Разделяем текст на предсказания и рекоммендации
-        anal, rec = result.split('На основе результатов ваших анализов мы рекомендуем следующие дополнительные исследования')
-        rec = 'На основе результатов ваших анализов мы рекомендуем следующие дополнительные исследования' + rec
+        anal, rec = result.split('На основе результатов ваших анализов мы рекомендуем следующие <b>дополнительные исследования:</b>')
+        rec = 'На основе результатов ваших анализов мы рекомендуем следующие <b>дополнительные исследования:</b>' + rec
 
         await message.reply(
             f"{anal}",
@@ -110,7 +146,8 @@ async def process_docx(message: Message, state: FSMContext):
         # Вывод результата анализа
         await message.reply(
             f"{rec}",
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_markup=keyboard
         )
     except Exception as e:
         await message.reply(

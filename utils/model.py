@@ -39,19 +39,14 @@ def retrieve_table_from_text(user_input: str) -> str:
 
     # Собираем очищенную таблицу обратно в текст
     cleaned_table = "\n".join(cleaned_lines)
-
-    print("Очищенная таблица (после удаления запятых в Analysis):")
-    print(cleaned_table)
     
     table_text_deviation = "Не получилось обработать таблицу из-за наличия букв/слов в значениях стобцов 'Value' и 'Reference Value'. Поэтому сам из таблицы указанной в input data составь таблицу Blood values that are abnormal, оставив строки только с теми показателями крови, значения которых отличаются от референсных."
 
     try:
         # Преобразуем очищенный текст в DataFrame
         df = pd.read_csv(StringIO(cleaned_table), quotechar="'", sep=',')
-        print(df)   
         df["Value"] = df['Value'].astype(float)
         df['Deviation'] = df.apply(check_deviation, axis=1)
-        print(df)
         table_text_deviation = filter_deviations(df)
     except Exception as e:
         print(f"Произошла ошибка: {e}")
@@ -131,4 +126,21 @@ def getting_bioethic_response(analyses, temperature=0.1):
         stop=None
     )
 
+    return response.choices[0].message['content'].strip()
+
+def diseases_check(diseases, temperature=0.1):
+    token_count = count_tokens(diseases)
+    max_tokens = token_count * 2
+    
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": config.system_content_diseases_filter.get_secret_value()},
+            {"role": "user", "content": config.user_content_diseases_filter.get_secret_value().format(diseases=diseases)},
+        ],
+        temperature=temperature,
+        max_tokens=max_tokens,
+        n=1,
+        stop=None
+    )
     return response.choices[0].message['content'].strip()

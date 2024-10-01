@@ -53,7 +53,7 @@ def save_data(chatid: int, age: str, sex: str, table: str, analysis: str) -> Non
             counter += 1
         with open(os.path.join(dir, file), 'w') as f:
             if dir.endswith('tables'):
-                f.write('# Age: ' + age + '\n')
+                f.write('# Age: ' + str(age) + '\n')
                 f.write('# Sex: ' + sex + '\n')
                 f.write(table)
             else:

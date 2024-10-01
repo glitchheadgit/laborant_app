@@ -11,6 +11,7 @@ cancel = ReplyKeyboardMarkup(
 main = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Расшифровать анализ")],
+        [KeyboardButton(text="Профили")],
         [KeyboardButton(text="Обратная связь")],
         [KeyboardButton(text="О нас")],
         #[KeyboardButton(text="FAQ")],
