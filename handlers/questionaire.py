@@ -11,7 +11,7 @@ from aiogram import Router, F
 
 from utils.model import retrieve_table_from_text, analyze_table_with_gpt, getting_bioethic_response, diseases_check
 from utils.preprocessing import read_pdf, save_data
-from utils.laborantdb import db_find_user_profile, db_create_file
+from utils.laborantdb import db_find_user_profile, db_create_file, db_analysis_inc
 from utils.preprocessing_1 import read_document
 from config_reader import config
 from utils.states import Form
@@ -55,6 +55,7 @@ async def process_pdf(message: Message, state: FSMContext):
     bioethic_response = getting_bioethic_response(analysis)
     # Сохранение данных
     analysis_id = await db_create_file(db, message.from_user.id, 3, bioethic_response, query)
+    _ = await db_analysis_inc(db, message.from_user.id)
     keyboard = create_file_rating(analysis_id)
 
     # Отладка: выводим содержимое исходной таблицы
@@ -81,7 +82,8 @@ async def process_pdf(message: Message, state: FSMContext):
 
     await message.reply(
         f"{anal}",
-        parse_mode="HTML"
+        parse_mode="HTML",
+        reply_markup=reply.main
     )
     # Вывод результата анализа
     await message.reply(
@@ -129,7 +131,7 @@ async def process_docx(message: Message, state: FSMContext):
         bioethic_response = getting_bioethic_response(analysis)
 
         analysis_id = await db_create_file(db, message.from_user.id, 3, bioethic_response, query)
-        await db_analysis_inc(db, message.from_user.id)
+        _ = await db_analysis_inc(db, message.from_user.id)
         keyboard = create_file_rating(analysis_id)
 
 
@@ -141,7 +143,8 @@ async def process_docx(message: Message, state: FSMContext):
 
         await message.reply(
             f"{anal}",
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_markup=reply.main
         )
         # Вывод результата анализа
         await message.reply(

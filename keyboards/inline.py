@@ -12,25 +12,13 @@ def create_file_rating(file_id):
     rating = InlineKeyboardBuilder()
     rating.row(
         InlineKeyboardButton(
-            text="😢",
+            text="👎",
+            callback_data=f"rating_{file_id}_0"
+            ),
+        InlineKeyboardButton(
+            text="👍",
             callback_data=f"rating_{file_id}_1"
-        ),
-        InlineKeyboardButton(
-            text="🙁",
-            callback_data=f"rating_{file_id}_2"
-        ),
-        InlineKeyboardButton(
-            text="😐",
-            callback_data=f"rating_{file_id}_3"
-        ),
-        InlineKeyboardButton(
-            text="😊",
-            callback_data=f"rating_{file_id}_4"
-        ),
-        InlineKeyboardButton(
-            text="😍",
-            callback_data=f"rating_{file_id}_5"
-        )
+            )
     )
 
     return rating.as_markup()
@@ -75,7 +63,7 @@ diseases = InlineKeyboardMarkup(
         ],
         [
             InlineKeyboardButton(
-                text="Нету",
+                text="Нет",
                 callback_data="T"
             )
         ],

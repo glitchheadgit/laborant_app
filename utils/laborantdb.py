@@ -45,7 +45,7 @@ async def db_create_user(db, user_id):
         }
 
         result = await db.users.insert_one(user)
-        return result.upserted_id
+        return result.inserted_id
     return False
 
 
@@ -101,9 +101,10 @@ async def db_delete_user_profile(db, user_id, profile_name):
     return result.modified_count > 0
 
 
-async def db_analysis_inc(db, user_id):
-    user_id = adler32((user_id).to_bytes(32, 'little'))
-    result = await db.users.update_one(
+def db_analysis_inc(db, user_id):
+    result = db.users.update_one(
         {'user_id': user_id},
         {'$inc': {'statistics.analyses_counter': 1}}
     )
+
+    return result

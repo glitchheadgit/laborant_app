@@ -107,10 +107,19 @@ async def set_profile(callback_query: CallbackQuery, state: FSMContext, bot: Bot
 async def set_profile_name(message: Message, state: FSMContext, bot: Bot):
     if not await db_find_user_profile(db, message.from_user.id, message.text) is None:
         await bot.send_message(text='Профиль с этим именем уже существует.', chat_id=message.from_user.id, reply_markup=reply.cancel)
+    elif message.text is None:
+        await bot.send_message(text='Пожалуйста, введите текст.', chat_id=message.from_user.id, reply_markup=reply.cancel)
     else:
         await state.update_data(name=message.text)
         await state.set_state(Profile.age)
-        await bot.delete_message(message.chat.id,message.message_id - 1)
+        try:
+            await bot.delete_message(message.chat.id,message.message_id - 1)
+        except:
+            pass
+        try:
+            await bot.delete_message(message.chat.id,message.message_id - 2)
+        except:
+            pass
         await bot.send_message(text='Пожалуйста, укажите Ваш возраст.', chat_id=message.from_user.id, reply_markup=reply.cancel)
 
 
@@ -121,7 +130,7 @@ async def process_analysis(message: Message, state: FSMContext):
 
 @router.message(F.text.in_(['/analysis', 'Расшифровать анализ']))
 async def process_analysis(message: Message, state: FSMContext):
-    await message.answer('Пожалуйста, сначала выберите профиль.')
+    await message.answer('Пожалуйста, сначала выберите <b>профиль</b>.\n\nДля этого нажмите в меню на кнопку <b>"Профили"</b>.\n\nПотом выберите или создайте профиль и переходите к расшифровке анализов.')
 
 
 @router.message(Profile.age, F.text.regexp(r'.*\D'))
@@ -132,7 +141,14 @@ async def age_answer_bad(message: Message, state: FSMContext):
 @router.message(Profile.age, F.text.regexp(r'^\d+$'))
 async def age_answer_good(message: Message, state: FSMContext, bot: Bot):
     await state.update_data(age=int(message.text)) 
-    await bot.delete_message(message.chat.id,message.message_id - 1)
+    try:
+        await bot.delete_message(message.chat.id,message.message_id - 1)
+    except:
+        pass
+    try:
+        await bot.delete_message(message.chat.id,message.message_id - 2)
+    except:
+        pass
     await message.answer('Теперь укажите, пожалуйста, пол:', reply_markup=inline.sex)
     await state.set_state(Profile.sex)
 
@@ -193,7 +209,14 @@ async def set_diseases(message: Message, state: FSMContext, bot: Bot):
     diseases_filtered = diseases_check(message.text)  # Предполагаем, что эта функция уже написана
     # Обновляем данные в состоянии FSM, сохраняем отфильтрованные данные
     await state.update_data(diseases=diseases_filtered)
-    await bot.delete_message(message.chat.id,message.message_id - 1)
+    try:
+        await bot.delete_message(message.chat.id,message.message_id - 1)
+    except:
+        pass
+    try:
+        await bot.delete_message(message.chat.id,message.message_id - 2)
+    except:
+        pass
 
     # Получаем остальные данные пользователя из состояния
     profile = await state.get_data()
@@ -214,7 +237,7 @@ async def set_diseases(message: Message, state: FSMContext, bot: Bot):
 @router.callback_query(F.data.startswith('rating_'))
 async def disease_answer_good(callback_query: CallbackQuery, state: FSMContext, bot: Bot):
     _, analysis_id, rating = callback_query.data.split('_')
-    await db_rate_file(db, callback_query.from_user.id, analysis_id, int(rating))
+    await db_rate_file(db, callback_query.from_user.id, analysis_id, rating == "1")
     await bot.edit_message_reply_markup(
         chat_id=callback_query.from_user.id,
         message_id=callback_query.message.message_id, 
