@@ -10,9 +10,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram import Router, F
 
 from utils.model import retrieve_table_from_text, analyze_table_with_gpt, getting_bioethic_response, diseases_check
-from utils.preprocessing import read_pdf, save_data
+from utils.preprocessing import read_pdf, read_docx
 from utils.laborantdb import db_find_user_profile, db_create_file, db_analysis_inc
-from utils.preprocessing_1 import read_document
+# from utils.preprocessing_1 import read_document
 from config_reader import config
 from utils.states import Form
 from keyboards import reply
@@ -33,7 +33,7 @@ async def process_pdf(message: Message, state: FSMContext):
     # Загрузка и чтение PDF
     file = await message.bot.download(file_id)
     await db_create_file(db, message.from_user.id, 0, bson.Binary(file.read()), query)
-    text = read_pdf(file)
+    text = await read_pdf(file)
     
     # Извлечение данных из состояния пользователя
     user_data = await state.get_data()
@@ -43,7 +43,7 @@ async def process_pdf(message: Message, state: FSMContext):
     else:
         profile['sex'] = 'Женщина'
 
-    table_text, table_text_deviation = retrieve_table_from_text(text)
+    table_text, table_text_deviation = await retrieve_table_from_text(text)
     await db_create_file(db, message.from_user.id, 2, table_text, query)
 
     # Формирование запроса для GPT-4
@@ -51,8 +51,8 @@ async def process_pdf(message: Message, state: FSMContext):
     
     prompt = config.prompt.get_secret_value().format(**formatter)
 
-    analysis = analyze_table_with_gpt(prompt)
-    bioethic_response = getting_bioethic_response(analysis)
+    analysis = await analyze_table_with_gpt(prompt)
+    bioethic_response = await getting_bioethic_response(analysis)
     # Сохранение данных
     analysis_id = await db_create_file(db, message.from_user.id, 3, bioethic_response, query)
     _ = await db_analysis_inc(db, message.from_user.id)
@@ -110,7 +110,7 @@ async def process_docx(message: Message, state: FSMContext):
     try:
         file = await message.bot.download(file_id)
         await db_create_file(db, message.from_user.id, 1, bson.Binary(file.read()))
-        text = read_docx(file)
+        text = await read_docx(file)
         user_data = await state.get_data()
         profile = await db_find_user_profile(db, message.from_user.id, user_data['name'])
         if profile['sex']:
@@ -118,7 +118,7 @@ async def process_docx(message: Message, state: FSMContext):
         else:
             profile['sex'] = 'Женщина'
 
-        table_text, table_text_deviation = retrieve_table_from_text(text)
+        table_text, table_text_deviation = await retrieve_table_from_text(text)
         await db_create_file(db, message.from_user.id, 2, table_text, query)
 
         # Формирование запроса для GPT-4
@@ -126,9 +126,9 @@ async def process_docx(message: Message, state: FSMContext):
 
         prompt = config.prompt.get_secret_value().format(**formatter)
 
-        analysis = analyze_table_with_gpt(prompt)
+        analysis = await analyze_table_with_gpt(prompt)
         #тут добавил переменную и после нее в резалт теперь биоэтик респонс
-        bioethic_response = getting_bioethic_response(analysis)
+        bioethic_response = await getting_bioethic_response(analysis)
 
         analysis_id = await db_create_file(db, message.from_user.id, 3, bioethic_response, query)
         _ = await db_analysis_inc(db, message.from_user.id)

@@ -1,14 +1,12 @@
-import pandas as pd
+import asyncio
 import pymupdf
 import docx
-import hashlib
-import os
 from io import BytesIO
 from config_reader import config
 from typing import List, Dict, Union
 
 
-def read_pdf(file: BytesIO) -> str:
+async def read_pdf(file: BytesIO) -> str:
     """
     Extracts text from pdf
     Arguments
@@ -19,11 +17,17 @@ def read_pdf(file: BytesIO) -> str:
     -------
     * String with full document text    
     """
-    with pymupdf.open('pdf', file) as pdf:
-        return chr(12).join([page.get_text() for page in pdf])
+    # with pymupdf.open('pdf', file) as pdf:
+    #     return chr(12).join([page.get_text() for page in pdf])
+    try:
+        # Open the PDF and extract text using asyncio.to_thread
+        return await asyncio.to_thread(
+            lambda: "\f".join([page.get_text() for page in pymupdf.open(stream=file, filetype="pdf")])
+        )
+    except Exception as e:
+        raise ValueError(f"Failed to read PDF: {e}")
 
-
-def read_docx(file: BytesIO) -> str:
+async def read_docx(file: BytesIO) -> str:
     """
     Extracts text from docx
     Arguments
@@ -34,27 +38,14 @@ def read_docx(file: BytesIO) -> str:
     -------
     * String with full document text    
     """
-    doc = docx.Document(file)
-    fullText = []
-    for para in doc.paragraphs:
-        fullText.append(para.text)
-    return '\n'.join(fullText)
-
-
-def save_data(chatid: int, age: str, sex: str, table: str, analysis: str) -> None:
-    dirs = [os.path.join('data', 'tables'), os.path.join('data', 'analyses')]
-    file = hashlib.sha256(str(chatid).encode()).hexdigest() + '_1'
-    counter = 2
-    for dir in dirs:
-        if not os.path.exists(dir):
-            os.mkdir(dir)
-        while os.path.exists(os.path.join(dir, file)):
-            file = file[:-1] + str(counter)
-            counter += 1
-        with open(os.path.join(dir, file), 'w') as f:
-            if dir.endswith('tables'):
-                f.write('# Age: ' + str(age) + '\n')
-                f.write('# Sex: ' + sex + '\n')
-                f.write(table)
-            else:
-                f.write(analysis)
+    # doc = docx.Document(file)
+    # fullText = []
+    # for para in doc.paragraphs:
+    #     fullText.append(para.text)
+    # return '\n'.join(fullText)
+    try:
+        # Open the DOCX and extract paragraphs using asyncio.to_thread
+        doc = await asyncio.to_thread(docx.Document, file)
+        return await asyncio.to_thread(lambda: "\n".join(para.text for para in doc.paragraphs))
+    except Exception as e:
+        raise ValueError(f"Failed to read DOCX: {e}")

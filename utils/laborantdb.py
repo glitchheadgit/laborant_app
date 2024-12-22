@@ -101,7 +101,7 @@ async def db_delete_user_profile(db, user_id, profile_name):
     return result.modified_count > 0
 
 
-def db_analysis_inc(db, user_id):
+async def db_analysis_inc(db, user_id):
     result = db.users.update_one(
         {'user_id': user_id},
         {'$inc': {'statistics.analyses_counter': 1}}

@@ -6,10 +6,10 @@ from io import StringIO
 from utils.preprocessing import read_pdf
 from config_reader import config
 
-openai.api_key = config.gpt_token.get_secret_value()
+client = openai.AsyncOpenAI(api_key=config.gpt_token.get_secret_value())
 
-def retrieve_table_from_text(user_input: str) -> str:
-    response = openai.ChatCompletion.create(
+async def retrieve_table_from_text(user_input: str) -> str:
+    response = await client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": config.system_content_table.get_secret_value()},
@@ -18,7 +18,7 @@ def retrieve_table_from_text(user_input: str) -> str:
         temperature=0.1,
         max_tokens=3000
     )
-    table = response.choices[0].message['content'].strip()
+    table = response.choices[0].message.content.strip()
     
     table_lines = table.strip().split("\n")
     cleaned_lines = []
@@ -86,8 +86,8 @@ def filter_deviations(df) -> str:
     return df[df['Deviation'].isin(['Понижен', 'Повышен'])].to_string(index=False)
 
 
-def analyze_table_with_gpt(prompt, temperature=0.1, max_tokens=3000):
-    response = openai.ChatCompletion.create(
+async def analyze_table_with_gpt(prompt, temperature=0.1, max_tokens=3000):
+    response = await client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": config.system_content_analyzer.get_secret_value()},
@@ -99,7 +99,7 @@ def analyze_table_with_gpt(prompt, temperature=0.1, max_tokens=3000):
         stop=None
     )
 
-    return response.choices[0].message['content'].strip()
+    return response.choices[0].message.content.strip()
 
 def count_tokens(text: str) -> int:
     #  Для экономии считаем кол-во токенов в запросе и умножаем на 2 потом.
@@ -107,14 +107,14 @@ def count_tokens(text: str) -> int:
     tokens = encoding.encode(text)
     return len(tokens)
 
-def getting_bioethic_response(analyses, temperature=0.1):
+async def getting_bioethic_response(analyses, temperature=0.1):
     # Подсчет количества токенов в prompt
     token_count = count_tokens(analyses)
     
     # Установка значения max_tokens (умножаем на 2)
     max_tokens = token_count * 2
 
-    response = openai.ChatCompletion.create(
+    response = await client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": config.system_content_bioethic.get_secret_value()},
@@ -126,13 +126,13 @@ def getting_bioethic_response(analyses, temperature=0.1):
         stop=None
     )
 
-    return response.choices[0].message['content'].strip()
+    return response.choices[0].message.content.strip()
 
-def diseases_check(diseases, temperature=0.1):
+async def diseases_check(diseases, temperature=0.1):
     token_count = count_tokens(diseases)
     max_tokens = token_count * 2
     
-    response = openai.ChatCompletion.create(
+    response = await client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": config.system_content_diseases_filter.get_secret_value()},
@@ -143,4 +143,4 @@ def diseases_check(diseases, temperature=0.1):
         n=1,
         stop=None
     )
-    return response.choices[0].message['content'].strip()
+    return response.choices[0].message.content.strip()
