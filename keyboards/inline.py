@@ -70,10 +70,11 @@ diseases = InlineKeyboardMarkup(
     ]
 )
 
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.types import InlineKeyboardButton
 
-def get_payment_keyboard():
-    builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(text="Оплатить", callback_data="start_payment"))
-    return builder.as_markup()
+def get_shop() -> InlineKeyboardMarkup:
+    """Создаёт клавиатуру для выбора количества расшифровок."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="1 расшифровка - 100 руб", callback_data="buy_1")],
+        [InlineKeyboardButton(text="3 расшифровки - 270 руб", callback_data="buy_3")],
+        [InlineKeyboardButton(text="5 расшифровки - 400 руб", callback_data="buy_5")],
+    ])

@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     system_content_bioethic: SecretStr
     system_content_diseases_filter: SecretStr
     user_content_diseases_filter: SecretStr
+    telegram_channel_id: SecretStr
+    provider_token: SecretStr
 
     model_config: SettingsConfigDict = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8"

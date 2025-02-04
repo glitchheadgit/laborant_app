@@ -1,12 +1,12 @@
 from aiogram import Router, F, Bot
-from aiogram.types import Message, InlineKeyboardButton, CallbackQuery
+from aiogram.types import Message, InlineKeyboardButton, CallbackQuery, LabeledPrice, PreCheckoutQuery, ContentType
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 
 from utils.model import diseases_check
 from utils.states import Form, Profile
-from utils.laborantdb import db_create_user, db_add_user_profile, db_delete_user_profile, db_create_file, db_find_user_profile, db_find_user_profiles, db_check_confirmation, db_rate_file
+from utils.laborantdb import db_create_user, db_add_user_profile, db_delete_user_profile, db_create_file, db_find_user_profile, db_find_user_profiles, db_check_confirmation, db_rate_file, db_add_jobs, db_get_jobs
 from keyboards import reply, inline
 from config_reader import config
 from bot import db
@@ -44,6 +44,13 @@ async def process_start_command(message: Message, state: FSMContext):
     await state.set_state(state=None)
     await message.answer("Готов к работе!", reply_markup=reply.main)
 
+@router.message(F.text.in_(["/buy", "Оплата"]))
+async def cmd_buy(message: Message):
+    prices_text = (
+        "Выберите количество расшифровок для покупки:"
+    )
+
+    await message.answer(prices_text, reply_markup=inline.get_shop())
 @router.message(F.text.in_(["/profiles", "Профили"]))
 async def show_profiles(message: Message, state: FSMContext, bot: Bot):
     check = await db_check_confirmation(db, message.from_user.id)
@@ -206,7 +213,7 @@ async def disease_answer_good(callback_query: CallbackQuery, state: FSMContext, 
 async def set_diseases(message: Message, state: FSMContext, bot: Bot):
 
     # Прогоняем через функцию фильтрации diseases_check
-    diseases_filtered = diseases_check(message.text)  # Предполагаем, что эта функция уже написана
+    diseases_filtered = await diseases_check(message.text)  # Предполагаем, что эта функция уже написана
     # Обновляем данные в состоянии FSM, сохраняем отфильтрованные данные
     await state.update_data(diseases=diseases_filtered)
     try:
@@ -243,3 +250,58 @@ async def disease_answer_good(callback_query: CallbackQuery, state: FSMContext, 
         message_id=callback_query.message.message_id, 
         reply_markup=None
     )
+
+
+## Магазин
+
+
+
+
+@router.callback_query(F.data.startswith('buy_'))
+async def handle_buy_callback(callback_query: CallbackQuery):
+    option = callback_query.data[4:]
+    amount_mapping = {
+        "1": 100,
+        "3": 270,
+        "5": 400,
+    }
+    selected_amount = amount_mapping.get(option)
+    prices = [
+            LabeledPrice(label=f"Расшифровки: {option} шт.", amount=selected_amount * 100)
+    ]
+
+    await callback_query.bot.send_invoice(
+        chat_id=callback_query.message.chat.id,
+        title=f"Покупка расшифровок",
+        description=f"{option} шт. за {selected_amount} рублей",
+        payload=f"decode_payment_{option}",
+        provider_token=config.provider_token.get_secret_value(),
+        currency="RUB",
+        prices=prices,
+        start_parameter="buy-decode"
+    )
+    await callback_query.answer()
+
+
+@router.pre_checkout_query()
+async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery, bot: Bot):
+    print(pre_checkout_query)
+    await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+@router.message(F.content_type == ContentType.SUCCESSFUL_PAYMENT)
+async def successful_payment_handler(message: Message):
+    """
+    Обработчик успешной оплаты.
+    Обновляет количество доступных расшифровок у пользователя.
+    """
+    user_id = message.from_user.id
+    payment_info = message.successful_payment
+
+    if payment_info.invoice_payload.startswith("decode_payment_"):
+        purchased_count = int(payment_info.invoice_payload[15:])
+        await db_add_jobs(db, user_id, purchased_count)
+        jobs = await db_get_jobs(db, user_id)
+
+        await message.answer(
+            f"Оплата успешно проведена!\nЧисло доступных расшифровок: <b>{jobs}</b>!"
+        )

@@ -108,3 +108,16 @@ async def db_analysis_inc(db, user_id):
     )
 
     return result
+
+
+async def db_get_jobs(db, user_id):
+    user_id = adler32((user_id).to_bytes(32, 'little'))
+    return await db.users.find_one({'user_id': user_id}, {'_id': 0, 'statistics.jobs': 1})
+
+
+async def db_add_jobs(db, user_id, jobs):
+    user_id = adler32((user_id).to_bytes(32, 'little'))
+    return await db.users.update_one(
+        {'user_id': user_id},
+        {'$inc': {'statistics.jobs': jobs}}
+        )
